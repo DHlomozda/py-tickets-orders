@@ -128,9 +128,17 @@ class TicketListSerializer(serializers.ModelSerializer):
         fields = ("id", "row", "seat", "movie_session")
         read_only_fields = ("id", )
 
+    def create(self, validated_data):
+        with transaction.atomic():
+            movie_session_data = validated_data.pop("movie_session")
+            ticket = Ticket.objects.create(**validated_data)
+            for movie_session in movie_session_data:
+                MovieSession.objects.create(ticket=ticket, **movie_session)
+            return ticket
+
 
 class OrderSerializer(serializers.ModelSerializer):
-    tickets = TicketListSerializer(many=True)
+    tickets = TicketListSerializer(many=True, read_only=False)
 
     class Meta:
         model = Order
